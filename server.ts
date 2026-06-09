@@ -12,10 +12,18 @@ app.use(express.json());
 
 // Netlify serverless functions path normalization middleware
 app.use((req, res, next) => {
+  // If running on Netlify, extract the original browser request URL directly from Netlify headers
+  const originalUri = req.headers["x-nf-request-uri"] || req.headers["x-original-url"];
+  if (originalUri && typeof originalUri === "string") {
+    req.url = originalUri;
+  }
+
+  // Double check: if it is routed via .netlify/functions, rewrite it back to our API structure
   if (req.url.startsWith("/.netlify/functions/api")) {
     req.url = req.url.replace("/.netlify/functions/api", "/api");
   }
-  // Remove any double slashes is present to avoid express routing hiccups
+
+  // Remove any double slashes to prevent Express from failing to match defined router endpoints
   req.url = req.url.replace(/\/+/g, "/");
   next();
 });
